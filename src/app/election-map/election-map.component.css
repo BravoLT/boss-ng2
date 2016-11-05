@@ -1,0 +1,14 @@
+.state {
+  fill: #999;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.state:hover {
+  fill-opacity: 0.5;
+}
+
+.state.selected {
+  fill: #ccc;
+  stroke: #333;
+}

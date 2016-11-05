@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef } from '@angular/core';
+import { Component, OnInit, Output, ElementRef, EventEmitter, ViewEncapsulation } from '@angular/core';
 import { Http, Response } from '@angular/http';
 import { D3Service, D3, Selection } from 'd3-ng2-service';
 import 'rxjs/add/operator/map';
@@ -7,69 +7,117 @@ const topojson = require('topojson');
 
 @Component({
   selector: 'boss-election-map',
-  templateUrl: './election-map.component.html',
-  styleUrls: ['./election-map.component.css']
+  template: `
+    <h2>Election Map</h2>
+    <div id="us-map"></div>
+  `,
+  styles: [`
+    .state {
+      fill: #999;
+      stroke: #fff;
+      stroke-width: 1;
+    }
+
+    .state:hover {
+      fill-opacity: 0.5;
+    }
+
+    .selected-state {
+      fill: yellow;
+      stroke: red;
+    }
+
+    #selectedState {
+      fill: #ccc;
+      stroke: #333;
+    }
+  `],
+  // templateUrl: './election-map.component.html',
+  // styleUrls: ['./election-map.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class ElectionMapComponent implements OnInit {
   private d3: D3;
-  private parentElement: any;
+  private componentElement: any;
+  private svg;
+
+  private statesData: Array<any> = [];
+
+  @Output('stateSelected') private stateSelectedEmitter: EventEmitter<any> = new EventEmitter();
+  @Output('stateHover') private stateHoverEmitter: EventEmitter<any> = new EventEmitter();
 
   constructor(element: ElementRef, d3Service: D3Service, private http: Http) {
     this.d3 = d3Service.getD3();
-    this.parentElement = element.nativeElement;
+    this.componentElement = element.nativeElement;
   }
 
   ngOnInit() {
-    let d3 = this.d3; // convenient alias
     let d3ParentElement: Selection<any, any, any, any>; // TODO: Fix types later
 
-    if (this.parentElement === null) { return; }
-
-    d3ParentElement = d3.select(this.parentElement);
+    if (this.componentElement === null) { return; }
 
     let [width, height] = [960, 500];
 
-    let projection = d3.geoAlbersUsa()
-      .translate([width / 2, height / 2])
-      .scale(1000);
-
-    let path = d3.geoPath().projection(projection);
-
-    let svg = d3ParentElement.append('svg')
+    this.svg = this.d3.select(this.componentElement).append('svg')
       .attr('width', width)
       .attr('height', height);
+
+    this.svg.append('g').attr('id', 'states');
+    this.svg.append('g').attr('id', 'selected-states');
 
     this.http.get('assets/us-states.json')
       .map(res => res.json())
       .subscribe(data => {
-        svg.selectAll('path')
-          .data(data.features)
-          .enter()
-          .append('path')
-          .attr('d', path)
-          .style('stroke', '#fff')
-          .style('stroke-width', '1')
-          .style('fill', '#999');
+        // this.statesData.splice(0, this.statesData.length, ...data.features);
+        this.statesData = data.features;
+        this.render();
       });
-    // TODO: Do D3 stuff!
-    // let width = 960,
-    //   height = 600;
-
-    // let path = d3.geoPath().projection(null);
-
-    // let svg = d3.select('#us-map').append('svg')
-    //   .attr('width', width)
-    //   .attr('height', height);
-
-    // this.http.get('assets/us-states.json')
-    //   .map(value => value.json())
-    //   .subscribe(us => {
-    //     svg.append('path')
-    //       .datum(topojson.mesh(us))
-    //       .attr('d', path);
-    //   },
-    //   error => console.log(error),
-    //   () => console.log('Complete'));
   }
 
+  render() {
+    let states = this.svg.select('#states').selectAll('path').data(this.statesData);
+
+    let [width, height] = [960, 500];
+
+    let projection = this.d3.geoAlbersUsa()
+      .translate([width / 2, height / 2])
+      .scale(1000);
+
+    let path = this.d3.geoPath().projection(projection);
+
+    // Enter
+    states.enter()
+      .each(() => console.log('adding a state'))
+      .append('path')
+      .attr('d', path)
+      .attr('class', 'state')
+      .on('click', datum => {
+        this.statesData.forEach(d => d.properties.selected = false);
+        datum.properties.selected = true;
+        this.render();
+        this.stateSelectedEmitter.emit(datum.properties);
+      });
+
+    let selectedStates = this.svg.select('#selected-states')
+      .selectAll('path')
+      .data(this.statesData.filter(s => s.properties.selected));
+
+    selectedStates.enter()
+      // .each(() => console.log('adding a selected-state'))
+      .append('path')
+      .attr('d', path)
+      .attr('class', 'selected-state')
+      .on('click', (d: any) => {
+        d.properties.selected = false;
+        this.render();
+      });
+
+    selectedStates
+      // .each(() => console.log('updating selected-state'))
+      .attr('d', path);
+
+    selectedStates.exit()
+      // .each(() => console.log('removing a selected-state'))
+      .remove();
+  }
 }
