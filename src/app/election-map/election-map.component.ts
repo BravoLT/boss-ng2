@@ -1,7 +1,9 @@
-import { Component, OnInit, Output, ElementRef, EventEmitter, ViewEncapsulation } from '@angular/core';
+import { Component, OnChanges, OnInit, Input, Output, ElementRef, EventEmitter, ViewEncapsulation } from '@angular/core';
 import { Http, Response } from '@angular/http';
 import { D3Service, D3, Selection } from 'd3-ng2-service';
 import 'rxjs/add/operator/map';
+
+import { StateInfo, StateInfoService } from '../state-info.service';
 
 const topojson = require('topojson');
 
@@ -32,23 +34,35 @@ const topojson = require('topojson');
       stroke: #333;
     }
   `],
-  // templateUrl: './election-map.component.html',
-  // styleUrls: ['./election-map.component.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class ElectionMapComponent implements OnInit {
+export class ElectionMapComponent implements OnInit, OnChanges {
   private d3: D3;
   private componentElement: any;
   private svg;
 
   private statesData: Array<any> = [];
+  private initialized = false;
+
+  @Input('selectedState') private selectedStateAbbrev: string;
 
   @Output('stateSelected') private stateSelectedEmitter: EventEmitter<any> = new EventEmitter();
   @Output('stateHover') private stateHoverEmitter: EventEmitter<any> = new EventEmitter();
 
-  constructor(element: ElementRef, d3Service: D3Service, private http: Http) {
+  constructor(
+    element: ElementRef,
+    d3Service: D3Service,
+    private http: Http,
+    private stateInfoService: StateInfoService) {
     this.d3 = d3Service.getD3();
     this.componentElement = element.nativeElement;
+  }
+
+  ngOnChanges() {
+    console.log('ngOnChanges: selectedStateAbbrev === ' + this.selectedStateAbbrev);
+    if (this.initialized) {
+      this.render();
+    }
   }
 
   ngOnInit() {
@@ -68,8 +82,13 @@ export class ElectionMapComponent implements OnInit {
     this.http.get('assets/us-states.json')
       .map(res => res.json())
       .subscribe(data => {
-        // this.statesData.splice(0, this.statesData.length, ...data.features);
         this.statesData = data.features;
+        this.statesData.forEach(s => {
+          let state = this.stateInfoService.getStateByName(s.properties.name);
+          if (state) {
+            s.properties.abbrev = state.abbrev;
+          }
+        });
         this.render();
       });
   }
@@ -87,7 +106,7 @@ export class ElectionMapComponent implements OnInit {
 
     // Enter
     states.enter()
-      .each(() => console.log('adding a state'))
+      // .each(() => console.log('adding a state'))
       .append('path')
       .attr('d', path)
       .attr('class', 'state')
@@ -119,5 +138,8 @@ export class ElectionMapComponent implements OnInit {
     selectedStates.exit()
       // .each(() => console.log('removing a selected-state'))
       .remove();
+
+    this.initialized = true;
   }
+
 }
