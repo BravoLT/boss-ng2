@@ -1,0 +1,21 @@
+.navlink {
+    display: block;
+    padding: 10px;
+    font-size: 1.1em;
+}
+
+.app-icon-button {
+    margin-right: 10px;
+    box-shadow: none;
+    background: none;
+    border: none;
+}
+
+.app-toolbar-menu {
+    color: #fff;
+}
+
+.app-content {
+    padding-left: 1em;
+    min-height: 50vh;
+}
