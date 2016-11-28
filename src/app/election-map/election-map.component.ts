@@ -5,8 +5,6 @@ import 'rxjs/add/operator/map';
 
 import { StateInfo, StateInfoService } from '../state-info.service';
 
-const topojson = require('topojson');
-
 @Component({
   selector: 'boss-election-map',
   template: `
@@ -59,7 +57,8 @@ export class ElectionMapComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges() {
-    console.log('ngOnChanges: selectedStateAbbrev === ' + this.selectedStateAbbrev);
+    let selectedState = this.stateInfoService.getStateByAbbrev(this.selectedStateAbbrev);
+    this.statesData.forEach(s => s.properties.selected = (s.properties.name === selectedState.name));
     if (this.initialized) {
       this.render();
     }
@@ -119,7 +118,7 @@ export class ElectionMapComponent implements OnInit, OnChanges {
 
     let selectedStates = this.svg.select('#selected-states')
       .selectAll('path')
-      .data(this.statesData.filter(s => s.properties.selected));
+      .data(this.statesData.filter(s => s.properties.selected), s => s.properties.name);
 
     selectedStates.enter()
       // .each(() => console.log('adding a selected-state'))

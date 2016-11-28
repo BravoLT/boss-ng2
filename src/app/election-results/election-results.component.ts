@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { StateInfo, StateInfoService } from '../state-info.service';
+import { StateElectionDetailResolverService } from './state-election-detail-resolver.service';
 
 @Component({
   selector: 'boss-election-results',
   template: `
     <h2>Election Results</h2>
     <span>Selected state: {{selectedState | json}}</span>
-    <!--<boss-election-map [selectedState]="selectedState?.abbrev" (stateSelected)="onStateSelected($event)"></boss-election-map>-->
     <boss-election-map [selectedState]="selectedState?.abbrev" (stateSelected)="onStateSelected($event)"></boss-election-map>
     <md-card>
       <a md-button class="state-button" routerLink="national" routerLinkActive="active">National</a>
@@ -38,12 +38,14 @@ export class ElectionResultsComponent implements OnInit {
   public selectedState: StateInfo;
 
   constructor(
-    private route: ActivatedRoute,
     private router: Router,
-    private stateInfoService: StateInfoService) {
+    private route: ActivatedRoute,
+    private stateInfoService: StateInfoService,
+    private stateResolver: StateElectionDetailResolverService) {
   }
 
   ngOnInit() {
+    this.stateResolver.selectedState.subscribe(next => this.selectedState = next);
   }
 
   onStateSelected(state) {

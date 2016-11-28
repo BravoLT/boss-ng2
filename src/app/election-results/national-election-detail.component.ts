@@ -2,8 +2,11 @@ import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'boss-national-election-detail',
-  templateUrl: './national-election-detail.component.html',
-  styleUrls: ['./national-election-detail.component.css']
+  template: `
+  <p>
+    national-election-detail works!
+  </p>`,
+  styleUrls: [``]
 })
 export class NationalElectionDetailComponent implements OnInit {
 

@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, Resolve, Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 
-import { StateInfoService } from '../state-info.service';
+import { StateInfoService, StateInfo } from '../state-info.service';
 
 @Injectable()
 export class StateElectionDetailResolverService implements Resolve<any> {
+
+  public selectedState = new BehaviorSubject<StateInfo>(null);
 
   constructor(private router: Router, private stateInfoService: StateInfoService) { }
 
@@ -15,6 +18,8 @@ export class StateElectionDetailResolverService implements Resolve<any> {
     if (!specifiedState) {
       this.router.navigateByUrl('results');
     }
+
+    this.selectedState.next(specifiedState);
 
     return specifiedState;
   }
